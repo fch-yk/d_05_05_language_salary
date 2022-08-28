@@ -1,5 +1,55 @@
 import requests
 from pprint import pprint
+from statistics import mean
+
+
+def get_hh_vacancies(language):
+    vacancies = []
+    found = 0
+    url = 'https://api.hh.ru/vacancies'
+    page = 0
+    while True:
+        payload = {
+            'text': f'"Программист {language}" OR "{language} Программист"',
+            'search_field': 'name',
+            'area': 1,
+            'page': page,
+        }
+        response = requests.get(url, params=payload, timeout=(3.05, 27))
+        response.raise_for_status()
+        serialized_response = response.json()
+        found = serialized_response['found']
+        if found <= 100:
+            return vacancies, 0
+
+        vacancies = [*vacancies, *serialized_response['items']]
+
+        page += 1
+        if page >= serialized_response['pages']:
+            break
+
+    return (vacancies, found)
+
+
+def predict_rub_salary(vacancy):
+    if vacancy is None:
+        return None
+    if vacancy['currency'] != 'RUR':
+        return None
+    if vacancy['from'] is None and vacancy['to'] is None:
+        return None
+    if vacancy['from'] is None and vacancy['to'] is not None:
+        return vacancy['to'] * 0.8
+    if vacancy['from'] is not None and vacancy['to'] is None:
+        return vacancy['from'] * 1.2
+
+    return int(mean((vacancy['from'], vacancy['to'])))
+
+
+def get_average_salary(salaries: list) -> int:
+    if not salaries:
+        return 0
+    return int(mean(salaries))
 
 
 def get_languages():
@@ -22,38 +72,31 @@ def get_languages():
     )
 
 
-def get_hh_vacancies():
+def get_hh_statictics():
     popular_languages = {}
     for language in get_languages():
-        url = 'https://api.hh.ru/vacancies'
-        payload = {
-            'text': f'"Программист {language}" OR "{language} Программист"',
-            'search_field': 'name',
-            'area': 1
-        }
-        response = requests.get(url, params=payload, timeout=(3.05, 27))
-        response.raise_for_status()
-        serialized_response = response.json()
-        if serialized_response['found'] <= 100:
+        vacancies, found = get_hh_vacancies(language)
+        if not found:
             continue
-        popular_languages[language] = serialized_response['found']
-        if language == 'Python':
-            for vacancy in serialized_response['items']:
-                print(vacancy['salary'])
+
+        salaries = []
+        for vacancy in vacancies:
+            rub_salary = predict_rub_salary(vacancy['salary'])
+            if rub_salary is None:
+                continue
+            salaries.append(rub_salary)
+
+        popular_languages[language] = {
+            'vacancies_found': found,
+            'vacancies_processed': len(salaries),
+            'average_salary': get_average_salary(salaries)
+        }
+
     return (popular_languages)
 
 
 def main():
-    # hh_vacancies_serialized = get_hh_vacancies()
-    # hh_vacancies = json.dumps(
-    #     hh_vacancies_serialized,
-    #     ensure_ascii=False,
-    #     indent="\t"
-    # )
-    # with open("tmp/hh.json", "w", encoding="UTF-8") as my_file:
-    #     my_file.write(hh_vacancies)
-
-    pprint(get_hh_vacancies())
+    pprint(get_hh_statictics())
 
 
 if __name__ == '__main__':
