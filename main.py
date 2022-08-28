@@ -37,7 +37,9 @@ def get_hh_vacancies():
         if serialized_response['found'] <= 100:
             continue
         popular_languages[language] = serialized_response['found']
-
+        if language == 'Python':
+            for vacancy in serialized_response['items']:
+                print(vacancy['salary'])
     return (popular_languages)
 
 
