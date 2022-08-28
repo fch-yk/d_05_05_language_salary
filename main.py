@@ -1,6 +1,8 @@
-import requests
 from pprint import pprint
 from statistics import mean
+
+import requests
+from environs import Env
 
 
 def get_hh_vacancies(language):
@@ -95,8 +97,36 @@ def get_hh_statictics():
     return (popular_languages)
 
 
+def get_superjob_statistics(superjob_api_key):
+
+    url = 'https://api.superjob.ru/2.0/vacancies/'
+    page = 0
+    headers = {'X-Api-App-Id': superjob_api_key}
+
+    # payload = {
+    #     'text': f'"Программист {language}" OR "{language} Программист"',
+    #     'search_field': 'name',
+    #     'area': 1,
+    #     'page': page,
+    # }
+    response = requests.get(
+        url,
+        # params=payload,
+        headers=headers,
+        timeout=(3.05, 27)
+    )
+    response.raise_for_status()
+    serialized_response = response.json()
+    for vacancy in serialized_response['objects']:
+        pprint(vacancy['profession'])
+
+
 def main():
-    pprint(get_hh_statictics())
+    env = Env()
+    env.read_env()
+    superjob_api_key = env('SUPERJOB_API_KEY')
+    pprint(get_superjob_statistics(superjob_api_key))
+    # pprint(get_hh_statictics())
 
 
 if __name__ == '__main__':
