@@ -3,6 +3,7 @@ from statistics import mean
 
 import requests
 from environs import Env
+from urllib.parse import unquote
 
 
 def get_hh_vacancies(language):
@@ -17,7 +18,10 @@ def get_hh_vacancies(language):
             'area': 1,
             'page': page,
         }
-        response = requests.get(url, params=payload, timeout=(3.05, 27))
+        connect_timeout = 3.05
+        read_timout = 27
+        timeouts = (connect_timeout, read_timout)
+        response = requests.get(url, params=payload, timeout=timeouts)
         response.raise_for_status()
         serialized_response = response.json()
         found = serialized_response['found']
@@ -100,25 +104,32 @@ def get_hh_statictics():
 def get_superjob_statistics(superjob_api_key):
 
     url = 'https://api.superjob.ru/2.0/vacancies/'
-    page = 0
-    headers = {'X-Api-App-Id': superjob_api_key}
 
-    # payload = {
-    #     'text': f'"Программист {language}" OR "{language} Программист"',
-    #     'search_field': 'name',
-    #     'area': 1,
-    #     'page': page,
-    # }
+    headers = {'X-Api-App-Id': superjob_api_key}
+    development_specialization_code = 48
+    profession_only_code = 1
+    payload = {
+        'keywords[0][srws]': profession_only_code,
+        'keywords[0][keys]': 'Программист',
+        'catalogues': development_specialization_code,
+        'town': 'Москва'
+    }
+    connect_timeout = 3.05
+    read_timeout = 27
     response = requests.get(
         url,
-        # params=payload,
+        params=payload,
         headers=headers,
-        timeout=(3.05, 27)
+        timeout=(connect_timeout, read_timeout)
     )
     response.raise_for_status()
     serialized_response = response.json()
     for vacancy in serialized_response['objects']:
-        pprint(vacancy['profession'])
+        print(vacancy['profession'], vacancy['town']['title'], sep=', ')
+
+    print('total:', serialized_response['total'])
+
+    return unquote(response.url)
 
 
 def main():
