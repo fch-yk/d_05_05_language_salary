@@ -37,19 +37,37 @@ def get_hh_vacancies(language):
     return (vacancies, found)
 
 
-def predict_rub_salary(vacancy):
-    if vacancy is None:
+def predict_salary(salary_from, salary_to):
+    only_to_ratio = 0.8
+    only_from_ratio = 1.2
+    if not salary_from and not salary_to:
         return None
-    if vacancy['currency'] != 'RUR':
-        return None
-    if vacancy['from'] is None and vacancy['to'] is None:
-        return None
-    if vacancy['from'] is None and vacancy['to'] is not None:
-        return vacancy['to'] * 0.8
-    if vacancy['from'] is not None and vacancy['to'] is None:
-        return vacancy['from'] * 1.2
+    if not salary_from and salary_to:
+        return int(salary_to * only_to_ratio)
+    if salary_from and not salary_to:
+        return int(salary_from * only_from_ratio)
 
-    return int(mean((vacancy['from'], vacancy['to'])))
+    return int(mean((salary_from, salary_to)))
+
+
+def predict_rub_salary_hh(vacancy):
+    salary = vacancy['salary']
+    if salary is None:
+        return None
+    if salary['currency'] != 'RUR':
+        return None
+
+    salary_from = 0 if vacancy['from'] is None else vacancy['from']
+    salary_to = 0 if vacancy['to'] is None else vacancy['to']
+
+    return predict_salary(salary_from, salary_to)
+
+
+def predict_rub_salary_sj(vacancy):
+    if vacancy['currency'] != 'rub':
+        return None
+
+    return predict_salary(vacancy['payment_from'], vacancy['payment_to'])
 
 
 def get_average_salary(salaries: list) -> int:
@@ -87,7 +105,7 @@ def get_hh_statictics():
 
         salaries = []
         for vacancy in vacancies:
-            rub_salary = predict_rub_salary(vacancy['salary'])
+            rub_salary = predict_rub_salary_hh(vacancy['salary'])
             if rub_salary is None:
                 continue
             salaries.append(rub_salary)
@@ -101,7 +119,7 @@ def get_hh_statictics():
     return (popular_languages)
 
 
-def get_superjob_statistics(superjob_api_key):
+def get_sj_statistics(superjob_api_key):
 
     url = 'https://api.superjob.ru/2.0/vacancies/'
 
@@ -125,7 +143,11 @@ def get_superjob_statistics(superjob_api_key):
     response.raise_for_status()
     serialized_response = response.json()
     for vacancy in serialized_response['objects']:
-        print(vacancy['profession'], vacancy['town']['title'], sep=', ')
+        print(
+            vacancy['profession'],
+            vacancy['town']['title'],
+            predict_rub_salary_sj(vacancy),
+            sep=', ')
 
     print('total:', serialized_response['total'])
 
@@ -136,7 +158,7 @@ def main():
     env = Env()
     env.read_env()
     superjob_api_key = env('SUPERJOB_API_KEY')
-    pprint(get_superjob_statistics(superjob_api_key))
+    pprint(get_sj_statistics(superjob_api_key))
     # pprint(get_hh_statictics())
 
 
