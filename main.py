@@ -231,7 +231,7 @@ def main():
     env = Env()
     env.read_env()
     superjob_api_key = env('SUPERJOB_API_KEY')
-    popularity_limit = env.int('POPULARITY_LIMIT', 100)
+    popularity_limit = env.int('POPULARITY_LIMIT', 10)
     languages = get_languages()
 
     job_boards_stats = []
