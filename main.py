@@ -1,9 +1,8 @@
-from pprint import pprint
 from statistics import mean
 
 import requests
 from environs import Env
-from urllib.parse import unquote
+from terminaltables import AsciiTable
 
 
 def predict_salary(salary_from, salary_to):
@@ -91,8 +90,8 @@ def get_hh_vacancies(page, language):
     )
 
 
-def get_hh_statictics(languages, popularity_limit):
-    hh_statistics = {}
+def get_hh_stats(languages, popularity_limit):
+    hh_stats = {}
     for language in languages:
         vacancies = []
         page = 0
@@ -119,13 +118,13 @@ def get_hh_statictics(languages, popularity_limit):
                 continue
             salaries.append(rub_salary)
 
-        hh_statistics[language] = {
+        hh_stats[language] = {
             'vacancies_found': found,
             'vacancies_processed': len(salaries),
             'average_salary': get_average_salary(salaries)
         }
 
-    return hh_statistics
+    return hh_stats
 
 
 def get_sj_vacancies(superjob_api_key, page, language):
@@ -136,8 +135,12 @@ def get_sj_vacancies(superjob_api_key, page, language):
     profession_only_code = 1
     payload = {
         'page': page,
-        'keywords[0][keys]': f'Программист {language}',
+        'keywords[0][keys]': 'Программист',
         'keywords[0][srws]': profession_only_code,
+        'keywords[0][skws]': 'and',
+        'keywords[1][keys]': language,
+        'keywords[1][srws]': profession_only_code,
+        'keywords[1][skws]': 'particular',
         'catalogues': development_specialization_code,
         'town': 'Москва'
     }
@@ -161,9 +164,9 @@ def get_sj_vacancies(superjob_api_key, page, language):
     )
 
 
-def get_sj_statistics(superjob_api_key, languages, popularity_limit):
+def get_sj_stats(superjob_api_key, languages, popularity_limit):
 
-    sj_statistics = {}
+    sj_stats = {}
     for language in languages:
         vacancies = []
         page = 0
@@ -190,13 +193,38 @@ def get_sj_statistics(superjob_api_key, languages, popularity_limit):
                 continue
             salaries.append(rub_salary)
 
-        sj_statistics[language] = {
+        sj_stats[language] = {
             'vacancies_found': total,
             'vacancies_processed': len(salaries),
             'average_salary': get_average_salary(salaries)
         }
 
-    return sj_statistics
+    return sj_stats
+
+
+def get_stats_table(job_board_stats):
+    table_data = []
+    table_data.append(
+        [
+            'Язык программирования',
+            'Найдено вакансий',
+            'Обработано вакансий',
+            'Средняя зарплата'
+        ]
+    )
+
+    for language, stats_card in job_board_stats['stats'].items():
+        table_data.append(
+            [
+                language,
+                stats_card['vacancies_found'],
+                stats_card['vacancies_processed'],
+                stats_card['average_salary']
+            ]
+        )
+
+    table = AsciiTable(table_data, job_board_stats['title'])
+    return table.table
 
 
 def main():
@@ -206,15 +234,15 @@ def main():
     popularity_limit = env.int('POPULARITY_LIMIT', 100)
     languages = get_languages()
 
-    hh_statistics = get_hh_statictics(languages, popularity_limit)
-    pprint(hh_statistics)
+    job_boards_stats = []
 
-    sj_statistics = get_sj_statistics(
-        superjob_api_key,
-        languages,
-        popularity_limit
-    )
-    pprint(sj_statistics)
+    stats = get_hh_stats(languages, popularity_limit)
+    job_boards_stats.append({'title': 'HeadHunter Moscow', 'stats': stats})
+    stats = get_sj_stats(superjob_api_key, languages, popularity_limit)
+    job_boards_stats.append({'title': 'SuperJob Moscow', 'stats': stats})
+
+    for job_board_stats in job_boards_stats:
+        print(get_stats_table(job_board_stats), end='\n'*2)
 
 
 if __name__ == '__main__':
