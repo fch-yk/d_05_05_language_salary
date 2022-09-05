@@ -81,12 +81,12 @@ def get_hh_vacancies(page, language):
     timeouts = (connect_timeout, read_timeout)
     response = requests.get(url, params=payload, timeout=timeouts)
     response.raise_for_status()
-    serialized_response = response.json()
+    vacancies_catalog = response.json()
 
     return (
-        serialized_response['items'],
-        serialized_response['found'],
-        serialized_response['pages']
+        vacancies_catalog['items'],
+        vacancies_catalog['found'],
+        vacancies_catalog['pages']
     )
 
 
@@ -155,12 +155,12 @@ def get_sj_vacancies(superjob_api_key, page, language):
         timeout=timeouts
     )
     response.raise_for_status()
-    serialized_response = response.json()
+    vacancies_catalog = response.json()
 
     return (
-        serialized_response['objects'],
-        serialized_response['total'],
-        serialized_response['more']
+        vacancies_catalog['objects'],
+        vacancies_catalog['total'],
+        vacancies_catalog['more']
     )
 
 
