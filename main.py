@@ -200,8 +200,8 @@ def get_sj_stats(superjob_api_key, languages, popularity_limit):
 
 
 def get_stats_table(job_board_stats):
-    table_data = []
-    table_data.append(
+    table_rows = []
+    table_rows.append(
         [
             'Язык программирования',
             'Найдено вакансий',
@@ -211,7 +211,7 @@ def get_stats_table(job_board_stats):
     )
 
     for language, stats_card in job_board_stats['stats'].items():
-        table_data.append(
+        table_rows.append(
             [
                 language,
                 stats_card['vacancies_found'],
@@ -220,7 +220,7 @@ def get_stats_table(job_board_stats):
             ]
         )
 
-    table = AsciiTable(table_data, job_board_stats['title'])
+    table = AsciiTable(table_rows, job_board_stats['title'])
     return table.table
 
 
