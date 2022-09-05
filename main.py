@@ -20,15 +20,12 @@ def predict_salary(salary_from, salary_to):
 
 def predict_rub_salary_hh(vacancy):
     salary = vacancy['salary']
-    if salary is None:
+    if not salary:
         return None
     if salary['currency'] != 'RUR':
         return None
 
-    salary_from = 0 if salary['from'] is None else salary['from']
-    salary_to = 0 if salary['to'] is None else salary['to']
-
-    return predict_salary(salary_from, salary_to)
+    return predict_salary(salary['from'], salary['to'])
 
 
 def predict_rub_salary_sj(vacancy):
@@ -114,7 +111,7 @@ def get_hh_stats(languages, popularity_limit):
 
         for vacancy in vacancies:
             rub_salary = predict_rub_salary_hh(vacancy)
-            if rub_salary is None:
+            if not rub_salary:
                 continue
             salaries.append(rub_salary)
 
@@ -189,7 +186,7 @@ def get_sj_stats(superjob_api_key, languages, popularity_limit):
 
         for vacancy in vacancies:
             rub_salary = predict_rub_salary_sj(vacancy)
-            if rub_salary is None:
+            if not rub_salary:
                 continue
             salaries.append(rub_salary)
 
